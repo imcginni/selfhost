@@ -14,12 +14,19 @@ warn() { echo -e "\033[1;33m[!] $*\033[0m"; }
 die() { echo -e "\033[1;31m[✗] $*\033[0m"; exit 1; }
 
 # 0) Sanity checks
-[ "$(id -u)" -eq 0 ] || die "Run as root: sudo bash setup-laptop-homelab.sh"
-grep -qi "Ubuntu" /etc/os-release || warn "This looks non-Ubuntu. Proceeding anyway."
-. /etc/os-release
-if ! [[ "${VERSION_ID:-}" =~ ^24\.04 ]]; then
-  warn "Not Ubuntu 24.04 (Noble). Detected: ${VERSION_ID:-unknown}. Continuing…"
+[ "$(id -u)" -eq 0 ] || die "Run as root (sudo bash mobile-setup.sh)"
+
+say "Target OS: Ubuntu Server 24.04 LTS"
+
+if [ -f /etc/os-release ]; then
+  . /etc/os-release
+  if [ "${ID:-}" != "ubuntu" ] || [ "${VERSION_ID:-}" != "24.04" ]; then
+    die "This script is written for Ubuntu 24.04 LTS. Detected: ${PRETTY_NAME:-unknown}."
+  fi
+else
+  die "/etc/os-release not found. This script expects Ubuntu 24.04."
 fi
+
 
 # 1) Base packages, updates
 say "Updating apt and installing base packages…"
@@ -352,13 +359,13 @@ say "Bringing the stack up with docker compose…"
 ( cd "$HOMELAB_ROOT" && docker compose pull && docker compose up -d )
 
 say "=============================================================="
-say "Laptop homelab is deploying. Quick links (on this machine):"
+say "Laptop homelab is deploying. Quick links:"
 echo " Dashy       : http://localhost:8080"
 echo " Jellyfin    : http://localhost:8096"
 echo " Nextcloud   : http://localhost:8081"
 echo " Uptime Kuma : http://localhost:3001"
 echo " Netdata     : http://localhost:19999"
-echo " Grafana     : http://localhost:3000  (admin / password from $ENV_FILE)"
+echo " Grafana     : http://localhost:3000"
 echo " Prometheus  : http://localhost:9090"
 echo " Portainer   : https://localhost:9443"
 
@@ -368,3 +375,4 @@ if [ "$INSTALL_TAILSCALE" = "true" ]; then
   say "Run 'sudo tailscale up' to authenticate your device to your tailnet."
 fi
 say "Done!"
+
